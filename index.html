@@ -1,14 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Discipline 30</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Discipline 30</title>
+<link rel="stylesheet" href="style.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#58bfa0">
 </head>
 <body>
-  <h1>Discipline 30</h1>
-  <div id="app"></div>
-  <script src="script.js"></script>
-</body>
-</html>
+<header>
+  <div style="flex:1;max-width:900px">
+    <h1>Discipline 30</h1>
+    <div class="header-under">
+      <div class="phase-pills" id="phasePills"></div>
+      <div class="progress-wrap" style="flex:1"><div id="progressBar" class="progress-bar"></div></div>
+      <div class="badge" id="dayInfo">Phase … · Day …</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <div class="tab active" id="tabTasks">Tasks</div>
+    <div class="tab" id="tabCalendar">Calendar</div>
+    <button id="btnSettings" class="icon-btn" aria-label="Settings">⚙️</button>
+  </div>
+
+  <div id="panelTasks">
+    <div class="section-title"><h2>Daily Tasks</h2><div class="badge" id="dowBadge">—</div></div>
+    <div class="list" id="dailyList"></div>
+
+    <div class="section-title"><h2>Today's Plan</h2><span class="badge">Guidance</span></div>
+    <div class="list" id="planList"></div>
+
+    <div class="section-title"><h2>Notes & Wins</h2><span class="badge">Jot one positive</span></div>
+    <textarea id="noteBox" class="note" placeholder="Positive, lessons, quick reflections…"></textarea>
+
+    <div class="section-title"><h2>Controls</h2><span></span></div>
+    <div class="controls">
+      <button class="primary" id="btnFinish">Finish Day</button>
+      <button id="btnReset">Reset today</button>
+      <button id="btnClear">Erase all</button>
+    </div>
+  </div>
+
+  <div id="panelCalendar" class="hidden">
+    <div class="calendar-header"><div id="calTitle" class="badge">Month YYYY</div></div>
+    <div class="calendar" id="calendarGrid"></div>
+    <div class="cal-weekday" style="text-align:center;margin-top:8px">Tap a day to review or adjust.</div>
+  </div>
+</div>
+
+<footer><div class="tiny">Offline-capable. No accounts.</div></footer>
+
+<div id="confirmModal" class="dialog-backdrop" role="dialog" aria-modal="true">
+  <div class="dialog">
+    <h3>Did you complete all tasks?</h3>
+    <p>You still have unfinished tasks. Would you like to complete them now, or continue and mark the day incomplete?</p>
+    <div class="actions">
+      <button id="btnCompleteNow">Complete Now</button>
+      <button class="primary" id="btnContinueAnyway">Continue Anyway</button>
+    </div>
+  </div>
+</div>
+
+<div id="recapModal" class="dialog-backdrop" role="dialog" aria-modal="true">
+  <div class="dialog">
+    <h3>Daily Recap</h3>
+    <div id="recapList" class="small"></div>
+    <p style="margin-top:10px">One positive thing:</p>
+    <input id="recapPositive" type="text" placeholder="Type one positive…"/>
+    <div class="actions">
+      <button id="btnRecapEdit">Back & edit</button>
+      <button class="primary" id="btnRecapSave">Save day</button>
+    </div>
+  </div>
+</div>
+
+<div id="settingsModal" class="dialog-backdrop" role="dialog" aria-modal="true">
+  <div class="dialog">
+    <h3>Settings</h3>
+    <p class="small">Pick a palette, rename/add/remove tasks, and edit your weekly plan.</p>
+    <div class="inline" style="margin-bottom:8px">
+      <button class="icon-btn" id="palSoft">Zen Light</button>
+      <button class="icon-btn" id="palDark">Dark</button>
+    </div>
+    <div id="settingsAnchors" class="settings-grid"></div>
+    <div class="add-row" style="margin-top:6px;display:flex;gap:8px;align-items:center">
+      <input id="newTaskName" type="text" placeholder="Add new task…"/>
+      <button class="icon-btn" id="newTaskRequired">Required</button>
+      <button class="icon-btn" id="btnAddTask">+ Add</button>
+    </div>
+    <hr class="soft" style="margin:12px 0"/>
+    <h3>Weekly Plan</h3>
+    <p class="small">Tap a day to add from presets or type your own (comma separated).</p>
+    <div class="settings-grid" id="weeklyEditor"></div>
+    <div class="actions">
+      <button id="btnSettingsCancel">Cancel</button>
+      <button class="primary" id="btnSettingsSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="onboard" class="onboard">
+  <div class="onwrap">
+    <div class="oncard"><h2>Welcome to Discipline 30</h2>
+      <p>Discipline 30 is a 30‑day‑phase habit system. Each day you’ll check off required tasks (workouts, 10K steps, hydration, food logging, reading, and more), add a note, and finish the day honestly.</p>
+    </div>
+    <div class="oncard"><h2>Choose start date</h2><input id="startDateInput" class="select" type="date"></div>
+    <div class="oncard"><h2>How many phases?</h2><div class="inline" id="phaseChoices"></div></div>
+    <div class="oncard">
+      <h2>Tasks</h2>
+      <p>Use the template or compose your own. You can add from the template list while customizing.</p>
+      <div class="inline">
+        <button class="icon-btn selected" id="useTemplate">Use template</button>
+        <button class="icon-btn" id="createOwn">Create my own</button>
+      </div>
+      <div id="templatePicker" style="margin-top:8px"><div id="templateChips" class="inline"></div></div>
+      <div id="customWrap" class="hidden" style="margin-top:8px">
+        <div class="inline">
+          <input id="customName" type="text" placeholder="New task name…"/>
+          <button class="icon-btn" id="customReq">Required</button>
+          <button class="icon-btn" id="customAdd">+ Add</button>
+        </div>
+        <div id="customList" style="margin-top:6px"></div>
+      </div>
+      <div class="preview"><div id="templatePreview" class="list"></div></div>
+    </div>
+    <div class="oncard">
+      <h2>Ready?</h2>
+      <p id="summaryTxt" class="small">You’ll complete 6 phases using the template tasks.</p>
+      <div class="actions"><button class="primary" id="startProgram">Start Phase 1</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body></html>
