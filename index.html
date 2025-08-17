@@ -6,7 +6,6 @@
   <title>Discipline 30</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#58bfa0">
@@ -33,7 +32,7 @@
     <!-- Tasks Panel -->
     <div id="panelTasks">
       <div class="section-title">
-        <h2>Daily Anchors</h2>
+        <h2>Daily Tasks</h2>
         <div class="badge" id="dowBadge">—</div>
       </div>
       <div class="list" id="dailyList"></div>
@@ -77,7 +76,7 @@
   <div id="confirmModal" class="dialog-backdrop" role="dialog" aria-modal="true">
     <div class="dialog">
       <h3>Did you complete all tasks?</h3>
-      <p>You still have unchecked anchors. Would you like to complete the unfinished tasks now, or continue and mark the day incomplete?</p>
+      <p>You still have unfinished tasks. Would you like to complete them now, or continue and mark the day incomplete?</p>
       <div class="actions">
         <button id="btnCompleteNow">Complete Now</button>
         <button class="primary" id="btnContinueAnyway">Continue Anyway</button>
@@ -103,7 +102,7 @@
   <div id="settingsModal" class="dialog-backdrop" role="dialog" aria-modal="true">
     <div class="dialog">
       <h3>Settings</h3>
-      <p class="small">Choose a palette, rename/add/remove anchors, and edit weekly plan.</p>
+      <p class="small">Choose a palette, rename/add/remove tasks, and edit weekly plan.</p>
       <div class="settings-grid" style="margin-bottom:8px">
         <div>
           <span class="palette-sample" style="background:var(--bg)"></span>
@@ -142,8 +141,7 @@
     <div class="onwrap">
       <div class="oncard">
         <h2>Welcome to Discipline 30</h2>
-        <p>Six 30‑day phases to build discipline. Track your daily anchors, finish days honestly, and watch your streak grow.</p>
-        <div class="actions"><button class="primary" id="obNext1">Get started</button></div>
+        <p>Discipline 30 is a simple system for building habits in 30‑day phases. Each day you’ll check off required tasks (workouts, 10K steps, hydration, food logging, reading, writing, and more), add a quick note, and complete the day honestly.</p>
       </div>
 
       <div class="oncard">
@@ -152,25 +150,28 @@
       </div>
 
       <div class="oncard">
-        <h2>Anchors</h2>
-        <p>Use the Discipline 30 template or create your own.</p>
+        <h2>Tasks</h2>
+        <p>Use the Discipline 30 template or create your own set.</p>
         <div class="inline">
-          <button class="icon-btn" id="useTemplate">Use template</button>
+          <button class="icon-btn selected" id="useTemplate">Use template</button>
           <button class="icon-btn" id="createOwn">Create my own</button>
         </div>
         <div id="customWrap" class="hidden" style="margin-top:8px">
           <div class="inline">
-            <input id="customName" type="text" placeholder="New anchor name…"/>
+            <input id="customName" type="text" placeholder="New task name…"/>
             <button class="icon-btn" id="customReq">Required</button>
             <button class="icon-btn" id="customAdd">+ Add</button>
           </div>
           <div id="customList" style="margin-top:6px"></div>
         </div>
+        <div class="preview">
+          <div id="templatePreview" class="list"></div>
+        </div>
       </div>
 
       <div class="oncard">
         <h2>Ready?</h2>
-        <p id="summaryTxt" class="small">You’ll complete 6 phases using the template anchors.</p>
+        <p id="summaryTxt" class="small">You’ll complete 6 phases using the template tasks.</p>
         <div class="actions"><button class="primary" id="startProgram">Start Phase 1</button></div>
       </div>
     </div>

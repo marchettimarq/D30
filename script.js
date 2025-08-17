@@ -1,6 +1,6 @@
 
-const KEY="discipline30_v7";
-const DEFAULT_TEMPLATE_ANCHORS=[
+const KEY="discipline30_v8";
+const DEFAULT_TEMPLATE_TASKS=[
   {name:"Workout #1 (≥30 min)",key:"w1",optional:false},
   {name:"Workout #2 (≥30 min, preferably outdoors)",key:"w2",optional:false},
   {name:"10K Steps",key:"steps",optional:false},
@@ -27,7 +27,7 @@ function newState(){
       palette:"soft",
       programDaysTotal:180, phaseLength:30, startDate:null,
       weeklyPlan: JSON.parse(JSON.stringify(DEFAULT_WEEKLY_PLAN)),
-      anchors: JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_ANCHORS)),
+      tasks: JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_TASKS)),
       configured:false, phasesChosen:6, usedTemplate:true
     },
     logs:{}
@@ -39,7 +39,7 @@ function dateKey(d){ return d.toISOString().slice(0,10); }
 function dayNumber(startISO,today){ const start=new Date(startISO+"T00:00:00"); return Math.max(1, Math.floor((today-start)/(1000*60*60*24))+1); }
 function phaseOfDay(n,len){ return Math.ceil(n/len); }
 
-// ---------------- THEME ----------------
+// THEME
 function applyPalette(name){
   const root=document.documentElement.style;
   if(name==="dark"){
@@ -67,19 +67,19 @@ function applyPalette(name){
 }
 applyPalette(STATE.settings.palette);
 
-// ---------------- HELPERS ----------------
-function todaysAnchors(date){
+// HELPERS
+function todaysTasks(date){
   const dow=date.getDay();
   const list=[];
-  for(const a of STATE.settings.anchors){
-    if(a.onlySunday && dow!==0) continue;
-    if(a.onlyWeekdays && (dow===0||dow===6)) continue;
-    list.push(a);
+  for(const t of STATE.settings.tasks){
+    if(t.onlySunday && dow!==0) continue;
+    if(t.onlyWeekdays && (dow===0||dow===6)) continue;
+    list.push(t);
   }
   return list;
 }
 
-// ---------------- RENDER ----------------
+// RENDER
 function renderPhaseDashboard(dayNum){
   const pills=document.getElementById("phasePills"); if(!pills) return;
   pills.innerHTML="";
@@ -107,26 +107,26 @@ function renderAll(){
   document.getElementById("progressBar").style.width=`${(((dayNum-1)%s.phaseLength)+1)/s.phaseLength*100}%`;
   renderPhaseDashboard(dayNum);
 
-  // anchors
+  // Tasks
   const key=dateKey(today);
-  const rec = logs[key] || (logs[key]={anchors:{},plan:{},note:"",completed:false});
-  const list = todaysAnchors(today);
+  const rec = logs[key] || (logs[key]={tasks:{},plan:{},note:"",completed:false});
+  const list = todaysTasks(today);
   const box = document.getElementById("dailyList"); box.innerHTML="";
-  list.forEach((a)=>{
-    const id=`a_${a.key}`;
-    const li=document.createElement("div"); li.className="card"+(rec.anchors[id]?" done":"")+(a.optional?" optional":"");
+  list.forEach((t)=>{
+    const id=`t_${t.key}`;
+    const li=document.createElement("div"); li.className="card"+(rec.tasks[id]?" done":"")+(t.optional?" optional":"");
     const cb=document.createElement("div"); cb.className="checkbox";
     cb.innerHTML = `<svg viewBox="0 0 24 24"><circle class="circ" cx="12" cy="12" r="9"></circle><path class="tick" d="M7 12.5l3 3.5 7-8"></path></svg>`;
-    cb.addEventListener("click",(e)=>{ e.stopPropagation(); rec.anchors[id]=!rec.anchors[id]; save(); renderAll(); });
-    const title=document.createElement("div"); title.className="title"; title.textContent=a.name;
-    const hint=document.createElement("div"); hint.className="hint"; hint.textContent=a.optional?"Optional":"Required";
+    cb.addEventListener("click",(e)=>{ e.stopPropagation(); rec.tasks[id]=!rec.tasks[id]; save(); renderAll(); });
+    const title=document.createElement("div"); title.className="title"; title.textContent=t.name;
+    const hint=document.createElement("div"); hint.className="hint"; hint.textContent=t.optional?"Optional":"Required";
     li.appendChild(cb); li.appendChild(title); li.appendChild(hint);
-    li.addEventListener("click",()=>{ rec.anchors[id]=!rec.anchors[id]; save(); renderAll(); });
-    if(rec.anchors[id]) li.classList.add("done"); else li.classList.remove("done");
+    li.addEventListener("click",()=>{ rec.tasks[id]=!rec.tasks[id]; save(); renderAll(); });
+    if(rec.tasks[id]) li.classList.add("done"); else li.classList.remove("done");
     box.appendChild(li);
   });
 
-  // plan
+  // Plan
   const planBox=document.getElementById("planList"); planBox.innerHTML="";
   const dowLong=today.toLocaleDateString(undefined,{weekday:'long'});
   const dowShort=today.toLocaleDateString(undefined,{weekday:'short'});
@@ -175,7 +175,7 @@ function buildCurrentMonthCalendar(){
     const rec=logs[key];
     const cell=document.createElement("div"); cell.className="cal-cell";
     if(key===todayKey) cell.classList.add("today");
-    if(dateObj < new Date(todayKey)){ cell.classList.add("past"); }
+    if(dateObj < new Date(todayKey)) cell.classList.add("past");
     if(rec){
       if(rec.completed){ cell.classList.add("done"); cell.textContent=d+" ✓"; }
       else { cell.classList.add("past"); cell.classList.add("missed"); cell.textContent=d+" ×"; }
@@ -187,22 +187,22 @@ function buildCurrentMonthCalendar(){
   }
 }
 
-// -------------- Finish Flow --------------
+// Finish flow
 function requiredComplete(date){
-  const list=todaysAnchors(date);
-  const rec=STATE.logs[dateKey(date)] || {anchors:{}};
-  for(const a of list){ if(a.optional) continue; if(!rec.anchors[`a_${a.key}`]) return false; }
+  const list=todaysTasks(date);
+  const rec=STATE.logs[dateKey(date)] || {tasks:{}};
+  for(const t of list){ if(t.optional) continue; if(!rec.tasks[`t_${t.key}`]) return false; }
   return true;
 }
 function highlightMissed(){
   const today=new Date();
-  const list=todaysAnchors(today);
-  const rec=STATE.logs[dateKey(today)] || {anchors:{}};
+  const list=todaysTasks(today);
+  const rec=STATE.logs[dateKey(today)] || {tasks:{}};
   const cards=[...document.getElementById("dailyList").children];
   cards.forEach((card, idx)=>{
-    const a=list[idx]; const id=`a_${a.key}`;
+    const t=list[idx]; const id=`t_${t.key}`;
     card.classList.remove("warn");
-    if(!a.optional && !rec.anchors[id]) card.classList.add("warn");
+    if(!t.optional && !rec.tasks[id]) card.classList.add("warn");
   });
 }
 function finishDay(){
@@ -211,33 +211,33 @@ function finishDay(){
   buildTodayRecap(); openRecap();
 }
 function buildTodayRecap(){
-  const today=new Date(); const list=todaysAnchors(today);
-  const rec=STATE.logs[dateKey(today)] || (STATE.logs[dateKey(today)]={anchors:{},plan:{},note:"",completed:false});
+  const today=new Date(); const list=todaysTasks(today);
+  const rec=STATE.logs[dateKey(today)] || (STATE.logs[dateKey(today)]={tasks:{},plan:{},note:"",completed:false});
   const container=document.getElementById("recapList"); container.innerHTML="";
-  list.forEach(a=>{
-    const ok=!!rec.anchors[`a_${a.key}`];
-    const row=document.createElement("div"); row.textContent=`${ok?"✓":"○"}  ${a.name}${a.optional?" (optional)":""}`; container.appendChild(row);
+  list.forEach(t=>{
+    const ok=!!rec.tasks[`t_${t.key}`];
+    const row=document.createElement("div"); row.textContent=`${ok?"✓":"○"}  ${t.name}${t.optional?" (optional)":""}`; container.appendChild(row);
   });
   document.getElementById("recapPositive").value = rec.note||"";
 }
 function saveRecapAndComplete(){
   const today=new Date();
-  const rec=STATE.logs[dateKey(today)] || (STATE.logs[dateKey(today)]={anchors:{},plan:{},note:"",completed:false});
+  const rec=STATE.logs[dateKey(today)] || (STATE.logs[dateKey(today)]={tasks:{},plan:{},note:"",completed:false});
   rec.note = document.getElementById("recapPositive").value || rec.note || "";
   rec.completed=true; save(); closeRecap(); renderAll();
 }
 
-// -------------- Calendar day open --------------
+// Calendar day open
 function openPastDay(key){
   const dateObj=new Date(key);
-  const rec = STATE.logs[key] || (STATE.logs[key]={anchors:{},plan:{},note:"",completed:false});
+  const rec = STATE.logs[key] || (STATE.logs[key]={tasks:{},plan:{},note:"",completed:false});
   const container=document.getElementById("recapList"); container.innerHTML="";
-  const list = todaysAnchors(dateObj);
-  list.forEach(a=>{
-    const ok = !!rec.anchors[`a_${a.key}`];
+  const list = todaysTasks(dateObj);
+  list.forEach(t=>{
+    const ok = !!rec.tasks[`t_${t.key}`];
     const row=document.createElement("div");
-    row.textContent = `${ok?"✓":"○"}  ${a.name}${a.optional?" (optional)":""}`;
-    row.addEventListener("click",()=>{ rec.anchors[`a_${a.key}`]=!ok; save(); openPastDay(key); });
+    row.textContent = `${ok?"✓":"○"}  ${t.name}${t.optional?" (optional)":""}`;
+    row.addEventListener("click",()=>{ rec.tasks[`t_${t.key}`]=!ok; save(); openPastDay(key); });
     container.appendChild(row);
   });
   const pos=document.getElementById("recapPositive"); pos.value = rec.note||"";
@@ -247,27 +247,27 @@ function openPastDay(key){
   openRecap();
 }
 
-// -------------- Modals --------------
+// Modals
 function openConfirm(){ document.getElementById("confirmModal").style.display="flex"; document.body.classList.add("no-scroll"); }
 function closeConfirm(){ document.getElementById("confirmModal").style.display="none"; document.body.classList.remove("no-scroll"); }
 function openRecap(){ document.getElementById("recapModal").style.display="flex"; document.body.classList.add("no-scroll"); }
 function closeRecap(){ document.getElementById("recapModal").style.display="none"; document.body.classList.remove("no-scroll"); }
 
-// -------------- Settings (existing) --------------
+// Settings
 function openSettings(){
   document.body.classList.add("no-scroll");
   document.getElementById("settingsModal").style.display="flex";
   const s=STATE.settings;
   const host=document.getElementById("settingsAnchors"); host.innerHTML="";
-  s.anchors.forEach((a,idx)=>{
+  s.tasks.forEach((t,idx)=>{
     const row=document.createElement("div"); row.className="settings-row";
-    const nameInput=document.createElement("input"); nameInput.type="text"; nameInput.value=a.name;
-    const toggle=document.createElement("button"); toggle.textContent=a.optional?"Optional":"Required"; toggle.className="icon-btn";
-    toggle.addEventListener("click",()=>{ a.optional=!a.optional; toggle.textContent=a.optional?"Optional":"Required"; });
+    const nameInput=document.createElement("input"); nameInput.type="text"; nameInput.value=t.name;
+    const toggle=document.createElement("button"); toggle.textContent=t.optional?"Optional":"Required"; toggle.className="icon-btn";
+    toggle.addEventListener("click",()=>{ t.optional=!t.optional; toggle.textContent=t.optional?"Optional":"Required"; });
     const del=document.createElement("button"); del.textContent="Delete"; del.className="delete-btn";
-    del.addEventListener("click",()=>{ s.anchors.splice(idx,1); save(); openSettings(); });
+    del.addEventListener("click",()=>{ s.tasks.splice(idx,1); save(); openSettings(); });
     row.appendChild(nameInput); row.appendChild(toggle); row.appendChild(del);
-    nameInput.addEventListener("input",()=>{ a.name = nameInput.value; });
+    nameInput.addEventListener("input",()=>{ t.name = nameInput.value; });
     host.appendChild(row);
   });
   const set=(id,day)=>document.getElementById(id).value = s.weeklyPlan[day].join(", ");
@@ -285,34 +285,36 @@ function toggleNewTaskMode(){ const btn=document.getElementById("newTaskRequired
 function addTask(){
   const name=document.getElementById("newTaskName").value.trim(); if(!name) return;
   const req=document.getElementById("newTaskRequired").textContent==="Required";
-  STATE.settings.anchors.push({name, key: name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,20), optional:!req});
+  STATE.settings.tasks.push({name, key: name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,20), optional:!req});
   document.getElementById("newTaskName").value=""; save(); openSettings();
 }
 function setPalette(name){ STATE.settings.palette=name; save(); applyPalette(name); }
 
-// -------------- Onboarding --------------
+// Onboarding
 function ensureOnboarding(){
   const ob=document.getElementById("onboard");
   if(STATE.settings.configured){ ob.style.display="none"; return; }
   ob.style.display="block";
+  // Phase choices
   const pc=document.getElementById("phaseChoices"); pc.innerHTML="";
   for(let i=1;i<=6;i++){
     const b=document.createElement("div"); b.className="pill"+(i===STATE.settings.phasesChosen?" active":""); b.textContent=i;
     b.addEventListener("click",()=>{ STATE.settings.phasesChosen=i; STATE.settings.programDaysTotal=i*30; save(); ensureOnboarding(); });
     pc.appendChild(b);
   }
-  const summary=document.getElementById("summaryTxt");
-  summary.textContent = `You’ll complete ${STATE.settings.phasesChosen} phase(s) using ${STATE.settings.usedTemplate?"the template anchors":"your custom anchors"}.`;
-
-  // template/custom handlers
-  document.getElementById("useTemplate").onclick = ()=>{
-    STATE.settings.anchors = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_ANCHORS));
-    STATE.settings.usedTemplate=true; save(); ensureOnboarding();
-  };
-  document.getElementById("createOwn").onclick = ()=>{
-    STATE.settings.usedTemplate=false; save();
-    document.getElementById("customWrap").classList.remove("hidden");
-  };
+  // Template vs custom
+  const useBtn=document.getElementById("useTemplate");
+  const ownBtn=document.getElementById("createOwn");
+  function syncChoice(){
+    useBtn.classList.toggle("selected", STATE.settings.usedTemplate);
+    ownBtn.classList.toggle("selected", !STATE.settings.usedTemplate);
+    document.getElementById("customWrap").classList.toggle("hidden", STATE.settings.usedTemplate);
+    renderTemplatePreview();
+    const summary=document.getElementById("summaryTxt");
+    summary.textContent = `You’ll complete ${STATE.settings.phasesChosen} phase(s) using ${STATE.settings.usedTemplate?"the template tasks":"your custom tasks"}.`;
+  }
+  useBtn.onclick=()=>{ STATE.settings.usedTemplate=true; if(!STATE.settings.tasks.length) STATE.settings.tasks = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_TASKS)); save(); syncChoice(); };
+  ownBtn.onclick=()=>{ STATE.settings.usedTemplate=false; save(); syncChoice(); };
   document.getElementById("customReq").onclick = ()=>{
     const b=document.getElementById("customReq");
     b.textContent = (b.textContent==="Required") ? "Optional" : "Required";
@@ -320,25 +322,26 @@ function ensureOnboarding(){
   document.getElementById("customAdd").onclick = ()=>{
     const name=document.getElementById("customName").value.trim(); if(!name) return;
     const req = document.getElementById("customReq").textContent==="Required";
-    if(STATE.settings.usedTemplate) STATE.settings.anchors=[];
-    STATE.settings.usedTemplate=false;
-    STATE.settings.anchors.push({name, key:name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,20), optional:!req});
+    if(STATE.settings.usedTemplate){ STATE.settings.usedTemplate=false; STATE.settings.tasks=[]; }
+    STATE.settings.tasks.push({name, key:name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,20), optional:!req});
     document.getElementById("customName").value="";
-    save(); ensureOnboarding();
+    save(); syncChoice();
   };
-  // render custom list
-  const list=document.getElementById("customList"); list.innerHTML="";
-  if(!STATE.settings.usedTemplate && STATE.settings.anchors.length){
-    STATE.settings.anchors.forEach((a,idx)=>{
-      const chip=document.createElement("span"); chip.className="taskchip"; chip.textContent = a.name + (a.optional?" (optional)":"");
-      const rm=document.createElement("button"); rm.className="rm"; rm.textContent="×";
-      rm.onclick=()=>{ STATE.settings.anchors.splice(idx,1); save(); ensureOnboarding(); };
-      chip.appendChild(rm); list.appendChild(chip);
+  function renderTemplatePreview(){
+    const host=document.getElementById("templatePreview"); host.innerHTML="";
+    const arr = STATE.settings.usedTemplate ? DEFAULT_TEMPLATE_TASKS : STATE.settings.tasks;
+    (arr && arr.length ? arr : DEFAULT_TEMPLATE_TASKS).forEach(t=>{
+      const row=document.createElement("div"); row.className="card";
+      const title=document.createElement("div"); title.className="title"; title.textContent=t.name;
+      const hint=document.createElement("div"); hint.className="hint"; hint.textContent=t.optional?"Optional":"Required";
+      row.appendChild(title); row.appendChild(hint); host.appendChild(row);
     });
   }
+  syncChoice();
 
-  document.getElementById("obNext1").onclick = ()=>{}; // already on same page
+  // Start
   document.getElementById("startProgram").onclick = ()=>{
+    if(STATE.settings.usedTemplate) STATE.settings.tasks = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_TASKS));
     STATE.settings.startDate = new Date().toISOString().slice(0,10);
     STATE.settings.configured=true; save();
     ob.style.display="none";
@@ -346,10 +349,25 @@ function ensureOnboarding(){
   };
 }
 
-// -------------- INIT --------------
+// Tabs
+function showTasks(){ 
+  document.getElementById("panelTasks").classList.remove("hidden"); 
+  document.getElementById("panelCalendar").classList.add("hidden"); 
+  document.getElementById("tabTasks").classList.add("active"); 
+  document.getElementById("tabCalendar").classList.remove("active"); 
+}
+function showCalendar(){ 
+  document.getElementById("panelCalendar").classList.remove("hidden"); 
+  document.getElementById("panelTasks").classList.add("hidden"); 
+  document.getElementById("tabCalendar").classList.add("active"); 
+  document.getElementById("tabTasks").classList.remove("active"); 
+  buildCurrentMonthCalendar();
+}
+
+// INIT
 window.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("btnFinish").addEventListener("click", finishDay);
-  document.getElementById("btnReset").addEventListener("click", ()=>{ const t=new Date(); STATE.logs[dateKey(t)]={anchors:{},plan:{},note:"",completed:false}; save(); renderAll(); });
+  document.getElementById("btnReset").addEventListener("click", ()=>{ const t=new Date(); STATE.logs[dateKey(t)]={tasks:{},plan:{},note:"",completed:false}; save(); renderAll(); });
   document.getElementById("btnClear").addEventListener("click", ()=>{ if(confirm("Erase ALL saved data?")){ STATE = newState(); save(); ensureOnboarding(); }});
   document.getElementById("btnCompleteNow").addEventListener("click", closeConfirm);
   document.getElementById("btnContinueAnyway").addEventListener("click", ()=>{ closeConfirm(); alert("Marked as incomplete. You can retry or adjust from the calendar."); });
@@ -363,6 +381,8 @@ window.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("palDark").addEventListener("click", ()=>setPalette("dark"));
   document.getElementById("newTaskRequired").addEventListener("click", toggleNewTaskMode);
   document.getElementById("btnAddTask").addEventListener("click", addTask);
+  document.getElementById("tabTasks").addEventListener("click", showTasks);
+  document.getElementById("tabCalendar").addEventListener("click", showCalendar);
 
   if(!STATE.settings.configured){ ensureOnboarding(); }
   else { renderAll(); }
