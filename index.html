@@ -1,24 +1,23 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Discipline 30</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#58bfa0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discipline 30</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#58bfa0">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
-    <div style="flex:1;max-width:900px">
-      <h1>Discipline 30</h1>
+    <div class="header-inner">
+      <h1 class="headline">Discipline 30</h1>
       <div class="header-under">
         <div class="phase-pills" id="phasePills"></div>
-        <div class="progress-wrap" style="flex:1"><div id="progressBar" class="progress-bar"></div></div>
-        <div class="badge" id="dayInfo">Phase … · Day …</div>
+        <div class="progress-wrap"><div id="progressBar" class="progress-bar"></div></div>
+        <div class="badge" id="dayInfo">Phase 1 · Day 1 / 30</div>
       </div>
     </div>
   </header>
@@ -27,29 +26,20 @@
     <div class="tabs">
       <div class="tab active" id="tabTasks">Tasks</div>
       <div class="tab" id="tabCalendar">Calendar</div>
-      <button id="btnSettings" class="icon-btn" aria-label="Settings">⚙️</button>
+      <button id="btnSettings" class="icon-btn">⚙️</button>
     </div>
 
     <div id="panelTasks">
-      <div class="section-title">
-        <h2>Daily Tasks</h2>
-        <div class="badge" id="dowBadge">—</div>
-      </div>
-      <div class="list" id="dailyList"></div>
+      <div class="section-title"><h2 class="headline" style="font-size:18px">Daily Tasks</h2><div class="badge" id="dowBadge">—</div></div>
+      <div id="dailyList" class="list"></div>
 
-      <div class="section-title">
-        <h2>Today's Plan</h2>
-        <span class="badge">Guidance</span>
-      </div>
-      <div class="list" id="planList"></div>
+      <div class="section-title"><h2 class="headline" style="font-size:18px">Today's Plan</h2><span class="badge">Guidance</span></div>
+      <div id="planList" class="list"></div>
 
-      <div class="section-title">
-        <h2>Notes & Wins</h2>
-        <span class="badge">Jot one positive</span>
-      </div>
+      <div class="section-title"><h2 class="headline" style="font-size:18px">Notes & Wins</h2><span class="badge">Jot one positive</span></div>
       <textarea id="noteBox" class="note" placeholder="Positive, lessons, quick reflections…"></textarea>
 
-      <div class="section-title"><h2>Controls</h2><span></span></div>
+      <div class="section-title"><h2 class="headline" style="font-size:18px">Controls</h2><span></span></div>
       <div class="controls">
         <button class="primary" id="btnFinish">Finish Day</button>
         <button id="btnReset">Reset today</button>
@@ -58,65 +48,108 @@
     </div>
 
     <div id="panelCalendar" class="hidden">
-      <div class="calendar-header">
-        <div id="calTitle" class="badge">Month YYYY</div>
-      </div>
+      <div class="section-title"><h2 class="headline" style="font-size:18px">Calendar</h2><div class="badge" id="calTitle"></div></div>
       <div class="calendar" id="calendarGrid"></div>
-      <div class="cal-weekday" style="text-align:center;margin-top:8px">Tap a day to review or adjust (locked days are dimmed).</div>
     </div>
   </div>
 
-  <footer><div class="tiny">Offline-capable. No accounts.</div></footer>
+  <footer>Offline-capable. No accounts.</footer>
 
-  <div id="confirmModal" class="dialog-backdrop" role="dialog" aria-modal="true">
-    <div class="dialog">
-      <h3>Did you complete all tasks?</h3>
-      <p>You haven’t completed all required tasks. Finish today or start over.</p>
-      <div class="actions">
-        <button id="btnCompleteNow">Complete Now</button>
-        <button class="primary" id="btnContinueAnyway">Start Over</button>
+  <!-- Confirm -->
+  <div id="confirmModal" class="dialog-backdrop"><div class="dialog">
+    <h3>Did you complete all tasks?</h3>
+    <p>You haven’t completed all required tasks. Finish today or start over.</p>
+    <div class="actions">
+      <button id="btnCompleteNow">Complete Now</button>
+      <button class="primary" id="btnContinueAnyway">Start Over</button>
+    </div>
+  </div></div>
+
+  <!-- Recap -->
+  <div id="recapModal" class="dialog-backdrop"><div class="dialog">
+    <h3>Daily Recap</h3>
+    <div id="recapList" class="small"></div>
+    <p style="margin-top:10px">One positive thing:</p>
+    <input id="recapPositive" type="text" placeholder="Type one positive…"/>
+    <div class="actions">
+      <button id="btnRecapEdit">Back & edit</button>
+      <button class="primary" id="btnRecapSave">Save day</button>
+    </div>
+  </div></div>
+
+  <!-- Settings -->
+  <div id="settingsModal" class="dialog-backdrop"><div class="dialog">
+    <h3>Settings</h3>
+    <p class="small">Palette + tasks + weekly plan.</p>
+    <div class="inline" style="margin-bottom:8px">
+      <button class="icon-btn" id="palSoft">Zen Light</button>
+      <button class="icon-btn" id="palDark">Dark</button>
+    </div>
+    <div id="settingsAnchors" class="settings-grid"></div>
+    <div class="inline" style="margin-top:8px">
+      <input id="newTaskName" type="text" placeholder="Add new task…"/>
+      <button class="icon-btn" id="newTaskRequired">Required</button>
+      <button class="icon-btn" id="btnAddTask">+ Add</button>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:12px 0"/>
+    <h3>Weekly Plan</h3>
+    <p class="small">Tap a day to add from presets or type your own (comma separated).</p>
+    <div id="weeklyEditor" class="settings-grid"></div>
+    <div class="actions">
+      <button id="btnSettingsCancel">Cancel</button>
+      <button class="primary" id="btnSettingsSave">Save</button>
+    </div>
+  </div></div>
+
+  <!-- Onboarding -->
+  <div id="onboard" class="onboard">
+    <div class="onwrap">
+      <div class="oncard">
+        <h2 class="headline">Welcome to Discipline 30</h2>
+        <p>Build momentum in 30‑day phases. Each day, complete your tasks (workouts, 10K steps, 3L water, log food, read), add a quick note, and finish honestly.</p>
+      </div>
+
+      <div class="oncard">
+        <h2 class="headline">Choose start date</h2>
+        <input id="startDateInput" type="date">
+      </div>
+
+      <div class="oncard">
+        <h2 class="headline">How many phases?</h2>
+        <div id="phaseChoices" class="inline"></div>
+      </div>
+
+      <div class="oncard">
+        <h2 class="headline">Tasks</h2>
+        <p>Use the template or compose your own. You can also add items from the template list while customizing.</p>
+        <div class="inline">
+          <button class="icon-btn" id="useTemplate">Use template</button>
+          <button class="icon-btn" id="createOwn">Create my own</button>
+        </div>
+        <div id="templatePicker" style="margin-top:8px">
+          <div id="templateChips" class="inline"></div>
+        </div>
+        <div id="customWrap" class="hidden" style="margin-top:8px">
+          <div class="inline">
+            <input id="customName" type="text" placeholder="New task name…"/>
+            <button class="icon-btn" id="customReq">Required</button>
+            <button class="icon-btn" id="customAdd">+ Add</button>
+          </div>
+          <div id="customList" style="margin-top:6px"></div>
+        </div>
+        <div class="preview">
+          <div id="templatePreview" class="list"></div>
+        </div>
+      </div>
+
+      <div class="oncard">
+        <h2 class="headline">Ready?</h2>
+        <p id="summaryTxt" class="small"></p>
+        <div class="actions"><button class="primary" id="startProgram">Start Phase 1</button></div>
       </div>
     </div>
   </div>
 
-  <div id="recapModal" class="dialog-backdrop" role="dialog" aria-modal="true">
-    <div class="dialog">
-      <h3>Daily Recap</h3>
-      <div id="recapList" class="small"></div>
-      <p style="margin-top:10px">One positive thing:</p>
-      <input id="recapPositive" type="text" placeholder="Type one positive…"/>
-      <div class="actions">
-        <button id="btnRecapEdit">Back & edit</button>
-        <button class="primary" id="btnRecapSave">Save day</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="settingsModal" class="dialog-backdrop" role="dialog" aria-modal="true">
-    <div class="dialog">
-      <h3>Settings</h3>
-      <p class="small">Palette + tasks + weekly plan.</p>
-      <div class="inline" style="margin-bottom:8px">
-        <button class="icon-btn" id="palSoft">Zen Light</button>
-        <button class="icon-btn" id="palDark">Dark</button>
-      </div>
-      <div id="settingsAnchors" class="settings-grid"></div>
-      <div class="add-row" style="margin-top:6px;display:flex;gap:8px;align-items:center">
-        <input id="newTaskName" type="text" placeholder="Add new task…"/>
-        <button class="icon-btn" id="newTaskRequired">Required</button>
-        <button class="icon-btn" id="btnAddTask">+ Add</button>
-      </div>
-      <hr class="soft" style="margin:12px 0"/>
-      <h3>Weekly Plan</h3>
-      <p class="small">Tap a day to add from presets or type your own (comma separated).</p>
-      <div class="settings-grid" id="weeklyEditor"></div>
-      <div class="actions">
-        <button id="btnSettingsCancel">Cancel</button>
-        <button class="primary" id="btnSettingsSave">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
