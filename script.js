@@ -1,6 +1,6 @@
 
-// Discipline 30 – v3.8.1 (palette fix)
-const KEY = "discipline30_v11";
+// Discipline 30 – v3.8.2 (palette surfaces + modal scroll fix)
+const KEY = "discipline30_v12";
 
 const TEMPLATE_TASKS = [
   {name:"Workout #1 (≥30 min)", key:"w1", optional:false},
@@ -18,52 +18,44 @@ const DEFAULT_PRESETS = [
 ];
 const DEFAULT_WEEKLY_PLAN = { Mon:[], Tue:[], Wed:[], Thu:[], Fri:[], Sat:[], Sun:[] };
 
-function newState() {
+function newState(){
   return {
-    settings: {
-      palette:"soft",
-      programDaysTotal: 180,
-      phaseLength: 30,
-      startDate: null,
-      currentUnlockedDate: null,
+    settings:{
+      palette:"dark",
+      programDaysTotal:180,
+      phaseLength:30,
+      startDate:null,
+      currentUnlockedDate:null,
       weeklyPlan: JSON.parse(JSON.stringify(DEFAULT_WEEKLY_PLAN)),
       tasks: JSON.parse(JSON.stringify(TEMPLATE_TASKS)),
       planPresets: [...DEFAULT_PRESETS],
-      configured: false,
-      phasesChosen: 6,
-      usedTemplate: true
+      configured:false,
+      phasesChosen:6,
+      usedTemplate:true
     },
-    progress: { lastCompletedDate: null },
-    logs: {}
+    progress:{ lastCompletedDate:null },
+    logs:{}
   };
 }
 let STATE = JSON.parse(localStorage.getItem(KEY) || "null") || newState();
 function save(){ localStorage.setItem(KEY, JSON.stringify(STATE)); }
-function todayKey(){ const d=new Date(); return dateKey(d); }
+
+// helper dates
+function todayKey(){ return dateKey(new Date()); }
 function dateKey(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; }
 function addDays(iso,days){ const [Y,M,D]=iso.split("-").map(Number); const d=new Date(Y,M-1,D); d.setDate(d.getDate()+days); return dateKey(d); }
 function cmpISO(a,b){ return a<b?-1:(a>b?1:0); }
-function dayNumber(startISO,onISO){ const s=new Date(startISO), t=new Date(onISO); s.setHours(0,0,0,0); t.setHours(0,0,0,0); return Math.max(1, Math.floor((t-s)/(86400000))+1); }
+function dayNumber(startISO,onISO){ const s=new Date(startISO), t=new Date(onISO); s.setHours(0,0,0,0); t.setHours(0,0,0,0); return Math.max(1, Math.floor((t-s)/86400000)+1); }
 function phaseOfDay(n,len){ return Math.ceil(n/len); }
 
-// ---- PALETTES (FIXED) ----
+// palette
 function applyPalette(name){
-  const r=document.documentElement.style;
-  if(name==="dark"){
-    r.setProperty('--bg','#0f1114'); r.setProperty('--card','#171a1f');
-    r.setProperty('--ink','#e9edf2'); r.setProperty('--muted','#9aa3af');
-    r.setProperty('--line','#2a2f36'); r.setProperty('--accent','#58bfa0');
-    document.body.style.background = 'radial-gradient(1200px 800px at 50% -200px, rgba(255,122,61,.12), transparent 40%), linear-gradient(180deg,#0f1114,#0b0c0f)';
-  } else { // soft
-    r.setProperty('--bg','#f7f7f8'); r.setProperty('--card','#ffffff');
-    r.setProperty('--ink','#121417'); r.setProperty('--muted','#6f7782');
-    r.setProperty('--line','#e7e8ea'); r.setProperty('--accent','#58bfa0');
-    document.body.style.background = '#f7f7f8';
-  }
+  STATE.settings.palette=name; save();
+  document.body.classList.toggle('light', name==='soft');
 }
-applyPalette(STATE.settings.palette);
+function setPalette(name){ applyPalette(name); renderAll(); }
 
-// ---- TASKS & LOCKING (same as v3.8) ----
+// tasks filter
 function todaysTasks(dateISO){
   const d=new Date(dateISO); const dow=d.getDay(); const list=[];
   for(const t of STATE.settings.tasks){
@@ -72,19 +64,23 @@ function todaysTasks(dateISO){
     list.push(t);
   } return list;
 }
+
+// locking
 function ensureUnlockedDate(){
   const s=STATE.settings, p=STATE.progress, tk=todayKey();
   if(!s.currentUnlockedDate) s.currentUnlockedDate=s.startDate;
-  if(p.lastCompletedDate){ const next=addDays(p.lastCompletedDate,1); s.currentUnlockedDate = cmpISO(next, tk) <= 0 ? next : tk; }
-  if(cmpISO(s.currentUnlockedDate, tk) > 0) s.currentUnlockedDate = tk;
+  if(p.lastCompletedDate){
+    const next=addDays(p.lastCompletedDate,1);
+    s.currentUnlockedDate = cmpISO(next, tk) <= 0 ? next : tk;
+  }
+  if(cmpISO(s.currentUnlockedDate, tk)>0) s.currentUnlockedDate = tk;
   save();
 }
 function isDayLocked(targetISO){ return cmpISO(targetISO, STATE.settings.currentUnlockedDate) > 0; }
 
+// render
 function renderPhaseHeader(activeISO){
-  const s=STATE.settings;
-  const dayNum=dayNumber(s.startDate, activeISO);
-  const phaseNum=phaseOfDay(dayNum, s.phaseLength);
+  const s=STATE.settings; const dayNum=dayNumber(s.startDate, activeISO); const phaseNum=phaseOfDay(dayNum, s.phaseLength);
   document.getElementById("dayInfo").textContent = `Phase ${phaseNum} · Day ${((dayNum-1)%s.phaseLength)+1} / ${s.phaseLength}`;
   document.getElementById("progressBar").style.width = `${((((dayNum-1)%s.phaseLength)+1)/s.phaseLength)*100}%`;
   const pills=document.getElementById("phasePills"); pills.innerHTML="";
@@ -92,12 +88,11 @@ function renderPhaseHeader(activeISO){
     const el=document.createElement("div"); el.className="phase-pill"+(i===phaseNum?" active":""); el.textContent=`P${i}`; pills.appendChild(el);
   }
 }
-
 function renderAll(){
   if(!STATE.settings.configured){ ensureOnboarding(); return; }
   ensureUnlockedDate();
   const s=STATE.settings, logs=STATE.logs, tk=todayKey();
-  const activeISO = cmpISO(tk, s.currentUnlockedDate) < 0 ? tk : s.currentUnlockedDate;
+  const activeISO = cmpISO(tk, s.currentUnlockedDate)<0 ? tk : s.currentUnlockedDate;
   const activeDate = new Date(activeISO);
   document.getElementById("dowBadge").textContent = activeDate.toLocaleDateString(undefined,{weekday:'long'});
   renderPhaseHeader(activeISO);
@@ -109,7 +104,7 @@ function renderAll(){
     const id=`t_${t.key}`;
     const li=document.createElement("div"); li.className="card"+(rec.tasks[id]?" done":"")+(t.optional?" optional":"");
     const cb=document.createElement("div"); cb.className="checkbox";
-    cb.innerHTML = `<svg viewBox="0 0 24 24"><circle class="circ" cx="12" cy="12" r="9"></circle><path class="tick" d="M7 12.5l3 3.5 7-8"></path></svg>`;
+    cb.innerHTML=`<svg viewBox="0 0 24 24"><circle class="circ" cx="12" cy="12" r="9"></circle><path class="tick" d="M7 12.5l3 3.5 7-8"></path></svg>`;
     cb.onclick=(e)=>{ e.stopPropagation(); if(rec.completed) return; rec.tasks[id]=!rec.tasks[id]; save(); renderAll(); };
     const title=document.createElement("div"); title.className="title"; title.textContent=t.name;
     const hint=document.createElement("div"); hint.className="hint"; hint.textContent=t.optional?"Optional":"Required";
@@ -126,7 +121,7 @@ function renderAll(){
     const id=`p_${idx}`;
     const li=document.createElement("div"); li.className="card"+(rec.plan&&rec.plan[id]?" done":"");
     const cb=document.createElement("div"); cb.className="checkbox";
-    cb.innerHTML = `<svg viewBox="0 0 24 24"><circle class="circ" cx="12" cy="12" r="9"></circle><path class="tick" d="M7 12.5l3 3.5 7-8"></path></svg>`;
+    cb.innerHTML=`<svg viewBox="0 0 24 24"><circle class="circ" cx="12" cy="12" r="9"></circle><path class="tick" d="M7 12.5l3 3.5 7-8"></path></svg>`;
     cb.onclick=(e)=>{ e.stopPropagation(); if(rec.completed) return; rec.plan=rec.plan||{}; rec.plan[id]=!rec.plan[id]; save(); renderAll(); };
     const title=document.createElement("div"); title.className="title"; title.textContent=name;
     const hint=document.createElement("div"); hint.className="hint"; hint.textContent="Tap to toggle";
@@ -134,12 +129,14 @@ function renderAll(){
     if(rec.plan&&rec.plan[id]) li.classList.add("done"); planBox.appendChild(li);
   });
 
+  // note
   const note=document.getElementById("noteBox"); note.value=rec.note||"";
   note.oninput=()=>{ if(rec.completed) return; rec.note=note.value; save(); };
+
   buildCurrentMonthCalendar();
 }
 
-// Finish flow
+// finish
 function requiredComplete(dateISO){
   const list=todaysTasks(dateISO); const rec=STATE.logs[dateISO]||{tasks:{}};
   for(const t of list){ if(t.optional) continue; if(!rec.tasks[`t_${t.key}`]) return false; } return true;
@@ -150,19 +147,15 @@ function highlightMissed(dateISO){
     const t=list[idx]; const id=`t_${t.key}`; card.classList.remove("warn"); if(!t.optional && !rec.tasks[id]) card.classList.add("warn");
   });
 }
-const confirmModal={open(){const m=document.getElementById("confirmModal"); m.style.display="flex"; document.body.classList.add("no-scroll");}, close(){const m=document.getElementById("confirmModal"); m.style.display="none"; document.body.classList.remove("no-scroll");}};
-const recapModal={open(){document.getElementById("recapModal").style.display="flex"; document.body.classList.add("no-scroll");}, close(){document.getElementById("recapModal").style.display="none"; document.body.classList.remove("no-scroll");}};
+const confirmModal={open(){document.getElementById("confirmModal").style.display="flex";}, close(){document.getElementById("confirmModal").style.display="none";}};
+const recapModal={open(){document.getElementById("recapModal").style.display="flex";}, close(){document.getElementById("recapModal").style.display="none";}};
 function buildTodayRecap(dateISO){
   const list=todaysTasks(dateISO); const rec=STATE.logs[dateISO]||(STATE.logs[dateISO]={tasks:{},plan:{},note:"",completed:false});
   const container=document.getElementById("recapList"); container.innerHTML="";
   list.forEach(t=>{ const ok=!!rec.tasks[`t_${t.key}`]; const row=document.createElement("div"); row.textContent=`${ok?"✓":"○"}  ${t.name}${t.optional?" (optional)":""}`; container.appendChild(row); });
   document.getElementById("recapPositive").value = rec.note||"";
 }
-function finishDay(){
-  const iso=STATE.settings.currentUnlockedDate;
-  if(!requiredComplete(iso)){ highlightMissed(iso); confirmModal.open(); return; }
-  buildTodayRecap(iso); recapModal.open();
-}
+function finishDay(){ const iso=STATE.settings.currentUnlockedDate; if(!requiredComplete(iso)){ highlightMissed(iso); confirmModal.open(); return; } buildTodayRecap(iso); recapModal.open(); }
 function saveRecapAndComplete(){
   const s=STATE.settings, p=STATE.progress, iso=s.currentUnlockedDate;
   const rec=STATE.logs[iso]||(STATE.logs[iso]={tasks:{},plan:{},note:"",completed:false});
@@ -177,7 +170,7 @@ function wireConfirmButtons(){
   };
 }
 
-// Calendar
+// calendar
 function buildCurrentMonthCalendar(){
   const grid=document.getElementById("calendarGrid"); grid.innerHTML="";
   const logs=STATE.logs, s=STATE.settings; const now=new Date();
@@ -192,8 +185,7 @@ function buildCurrentMonthCalendar(){
     const cell=document.createElement("div"); cell.className="cal-cell"; if(key===tk) cell.classList.add("today");
     if(rec){ if(rec.completed){ cell.classList.add("done"); cell.textContent=d+" ✓"; } else { cell.classList.add("past","missed"); cell.textContent=d+" ×"; } }
     else { cell.textContent=String(d); }
-    if(isDayLocked(key)){ cell.style.opacity=".35"; cell.style.pointerEvents="none"; }
-    else { cell.onclick=()=>openPastDay(key); }
+    if(isDayLocked(key)){ cell.style.opacity=".35"; cell.style.pointerEvents="none"; } else { cell.onclick=()=>openPastDay(key); }
     if(s.startDate && cmpISO(key, s.startDate) < 0){ cell.classList.add("past"); cell.style.opacity=".3"; cell.style.pointerEvents="none"; }
     grid.appendChild(cell);
   }
@@ -203,17 +195,18 @@ function openPastDay(key){
   const rec=STATE.logs[key]||(STATE.logs[key]={tasks:{},plan:{},note:"",completed:false});
   const container=document.getElementById("recapList"); container.innerHTML="";
   const list=todaysTasks(key);
-  list.forEach(t=>{ const ok=!!rec.tasks[`t_${t.key}`]; const row=document.createElement("div"); row.textContent=`${ok?"✓":"○"}  ${t.name}${t.optional?" (optional)":""}`; row.onclick=()=>{ if(rec.completed) return; rec.tasks[`t_${t.key}`]=!ok; save(); openPastDay(key); }; container.appendChild(row); });
+  list.forEach(t=>{ const ok=!!rec.tasks[`t_${t.key}`]; const row=document.createElement("div"); row.textContent=`${ok?"✓":"○"}  ${t.name}${t.optional?" (optional)":""}`;
+    row.onclick=()=>{ if(rec.completed) return; rec.tasks[`t_${t.key}`]=!ok; save(); openPastDay(key); }; container.appendChild(row); });
   const pos=document.getElementById("recapPositive"); pos.value=rec.note||"";
-  document.getElementById("btnRecapSave").onclick=()=>{ rec.note=pos.value||rec.note||""; rec.completed=true; save(); if(key===STATE.settings.currentUnlockedDate){ STATE.progress.lastCompletedDate=key; const tk=todayKey(), next=addDays(key,1); STATE.settings.currentUnlockedDate=(cmpISO(next,tk)<=0)?next:tk; } recapModal.close(); renderAll(); };
+  document.getElementById("btnRecapSave").onclick=()=>{ rec.note=pos.value||rec.note||""; rec.completed=true; save();
+    if(key===STATE.settings.currentUnlockedDate){ STATE.progress.lastCompletedDate=key; const tk=todayKey(), next=addDays(key,1); STATE.settings.currentUnlockedDate=(cmpISO(next,tk)<=0)?next:tk; }
+    recapModal.close(); renderAll(); };
   recapModal.open();
 }
 
-// Settings + presets
+// settings
 function openSettings(){
-  document.body.classList.add("no-scroll");
   document.getElementById("settingsModal").style.display="flex";
-
   const s=STATE.settings;
   const host=document.getElementById("settingsAnchors"); host.innerHTML="";
   s.tasks.forEach((t,idx)=>{
@@ -246,48 +239,55 @@ function openSettings(){
   });
 }
 function saveSettings(){
-  const s=STATE.settings;
-  const rows=[...document.querySelectorAll("#weeklyEditor .settings-row")];
+  const s=STATE.settings; const rows=[...document.querySelectorAll("#weeklyEditor .settings-row")];
   const days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   days.forEach((day,i)=>{ const input=rows[i].querySelector("input"); s.weeklyPlan[day]=input.value.split(",").map(x=>x.trim()).filter(Boolean); });
   save(); closeSettings(); renderAll();
 }
-function closeSettings(){ document.getElementById("settingsModal").style.display="none"; document.body.classList.remove("no-scroll"); }
-function toggleNewTaskMode(){ const btn=document.getElementById("newTaskRequired"); btn.textContent = (btn.textContent==="Required") ? "Optional" : "Required"; }
+function closeSettings(){ document.getElementById("settingsModal").style.display="none"; }
+function toggleNewTaskMode(){ const btn=document.getElementById("newTaskRequired"); btn.textContent=(btn.textContent==="Required")?"Optional":"Required"; }
 function addTask(){ const name=document.getElementById("newTaskName").value.trim(); if(!name) return;
   const req=document.getElementById("newTaskRequired").textContent==="Required";
   STATE.settings.tasks.push({name, key:name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,20), optional:!req});
   document.getElementById("newTaskName").value=""; save(); openSettings();
 }
-function setPalette(name){ STATE.settings.palette=name; save(); applyPalette(name); }
 
-// Onboarding
+// onboarding
 function ensureOnboarding(){
-  const ob=document.getElementById("onboard"); if(STATE.settings.configured){ ob.style.display="none"; return; }
+  const ob=document.getElementById("onboard");
+  if(STATE.settings.configured){ ob.style.display="none"; return; }
   ob.style.display="block";
   const tk=todayKey();
-  const startInput=document.getElementById("startDateInput"); startInput.value = tk;
+  const startInput=document.getElementById("startDateInput"); startInput.value=tk;
+
   const pc=document.getElementById("phaseChoices"); pc.innerHTML="";
   for(let i=1;i<=6;i++){ const b=document.createElement("div"); b.className="pill"+(i===STATE.settings.phasesChosen?" active":""); b.textContent=i; b.onclick=()=>{ STATE.settings.phasesChosen=i; STATE.settings.programDaysTotal=i*30; save(); ensureOnboarding(); }; pc.appendChild(b); }
-  const useBtn=document.getElementById("useTemplate"); const ownBtn=document.getElementById("createOwn"); const customWrap=document.getElementById("customWrap"); const chipsHost=document.getElementById("templateChips");
+
+  const useBtn=document.getElementById("useTemplate"); const ownBtn=document.getElementById("createOwn");
+  const customWrap=document.getElementById("customWrap"); const chipsHost=document.getElementById("templateChips");
 
   function renderChips(){ chipsHost.innerHTML=""; TEMPLATE_TASKS.forEach(t=>{ const chip=document.createElement("button"); chip.className="icon-btn"; chip.textContent=`+ ${t.name}`; chip.onclick=()=>{ if(STATE.settings.usedTemplate){ STATE.settings.usedTemplate=false; STATE.settings.tasks=[]; } STATE.settings.tasks.push({...t}); customWrap.classList.remove("hidden"); syncChoice(); renderCustomList(); }; chipsHost.appendChild(chip); }); }
-  function renderCustomList(){ const list=document.getElementById("customList"); list.innerHTML=""; STATE.settings.tasks.forEach((t,idx)=>{ const chip=document.createElement("span"); chip.className="taskchip"; chip.textContent = t.name + (t.optional?" (optional)":""); const rm=document.createElement("button"); rm.className="rm"; rm.textContent="×"; rm.onclick=()=>{ STATE.settings.tasks.splice(idx,1); save(); renderCustomList(); renderPreview(); }; chip.appendChild(rm); list.appendChild(chip); }); }
+  function renderCustomList(){ const list=document.getElementById("customList"); list.innerHTML=""; STATE.settings.tasks.forEach((t,idx)=>{ const chip=document.createElement("span"); chip.className="taskchip"; chip.textContent=t.name+(t.optional?" (optional)":""); const rm=document.createElement("button"); rm.className="rm"; rm.textContent="×"; rm.onclick=()=>{ STATE.settings.tasks.splice(idx,1); save(); renderCustomList(); renderPreview(); }; chip.appendChild(rm); list.appendChild(chip); }); }
   function renderPreview(){ const host=document.getElementById("templatePreview"); host.innerHTML=""; (STATE.settings.tasks.length?STATE.settings.tasks:TEMPLATE_TASKS).forEach(t=>{ const row=document.createElement("div"); row.className="card"; const title=document.createElement("div"); title.className="title"; title.textContent=t.name; const hint=document.createElement("div"); hint.className="hint"; hint.textContent=t.optional?"Optional":"Required"; row.append(title,hint); host.appendChild(row); }); }
   function syncChoice(){ useBtn.classList.toggle("selected", STATE.settings.usedTemplate); ownBtn.classList.toggle("selected", !STATE.settings.usedTemplate); if(STATE.settings.usedTemplate){ STATE.settings.tasks = JSON.parse(JSON.stringify(TEMPLATE_TASKS)); customWrap.classList.add("hidden"); } else { customWrap.classList.remove("hidden"); } renderPreview(); }
-  useBtn.onclick=()=>{ STATE.settings.usedTemplate=true; save(); syncChoice(); }; ownBtn.onclick=()=>{ STATE.settings.usedTemplate=false; save(); syncChoice(); };
+  useBtn.onclick=()=>{ STATE.settings.usedTemplate=true; save(); syncChoice(); };
+  ownBtn.onclick=()=>{ STATE.settings.usedTemplate=false; save(); syncChoice(); };
   document.getElementById("customReq").onclick=()=>{ const b=document.getElementById("customReq"); b.textContent=(b.textContent==="Required")?"Optional":"Required"; };
   document.getElementById("customAdd").onclick=()=>{ const name=document.getElementById("customName").value.trim(); if(!name) return; const req=document.getElementById("customReq").textContent==="Required"; if(STATE.settings.usedTemplate){ STATE.settings.usedTemplate=false; STATE.settings.tasks=[]; } STATE.settings.tasks.push({name, key:name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,20), optional:!req}); document.getElementById("customName").value=""; save(); renderCustomList(); renderPreview(); ownBtn.classList.add("selected"); useBtn.classList.remove("selected"); };
 
   renderChips(); renderCustomList(); syncChoice();
-  document.getElementById("startProgram").onclick=()=>{ STATE.settings.startDate=startInput.value||tk; STATE.settings.currentUnlockedDate=STATE.settings.startDate; STATE.progress.lastCompletedDate=null; STATE.settings.configured=true; save(); ob.style.display="none"; renderAll(); };
-  document.getElementById("palSoft").onclick=()=>setPalette("soft");
-  document.getElementById("palDark").onclick=()=>setPalette("dark");
+
+  document.getElementById("startProgram").onclick=()=>{
+    STATE.settings.startDate=startInput.value||tk;
+    STATE.settings.currentUnlockedDate=STATE.settings.startDate;
+    STATE.progress.lastCompletedDate=null;
+    STATE.settings.configured=true; save();
+    ob.style.display="none"; renderAll();
+  };
 
   document.getElementById("summaryTxt").textContent = `You’ll complete ${STATE.settings.phasesChosen} phase(s). Start date: ${tk}.`;
 }
 
-// Tabs/init
 function showTasks(){ document.getElementById("panelTasks").classList.remove("hidden"); document.getElementById("panelCalendar").classList.add("hidden"); document.getElementById("tabTasks").classList.add("active"); document.getElementById("tabCalendar").classList.remove("active"); }
 function showCalendar(){ document.getElementById("panelCalendar").classList.remove("hidden"); document.getElementById("panelTasks").classList.add("hidden"); document.getElementById("tabCalendar").classList.add("active"); document.getElementById("tabTasks").classList.remove("active"); buildCurrentMonthCalendar(); }
 
@@ -298,8 +298,8 @@ window.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("btnRecapEdit").onclick=()=>recapModal.close();
   document.getElementById("btnRecapSave").onclick=saveRecapAndComplete;
   document.getElementById("btnSettings").onclick=openSettings;
-  document.getElementById("btnSettingsCancel").onclick=closeSettings;
-  document.getElementById("btnSettingsSave").onclick=saveSettings;
+  document.getElementById("btnSettingsCancel")?.addEventListener("click", ()=>document.getElementById("settingsModal").style.display="none");
+  document.getElementById("btnSettingsSave")?.addEventListener("click", saveSettings);
   document.getElementById("palSoft").onclick=()=>setPalette("soft");
   document.getElementById("palDark").onclick=()=>setPalette("dark");
   document.getElementById("newTaskRequired").onclick=toggleNewTaskMode;
@@ -308,6 +308,6 @@ window.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("tabCalendar").onclick=showCalendar;
   wireConfirmButtons();
 
-  if(!STATE.settings.configured){ ensureOnboarding(); }
-  else { renderAll(); }
+  if(STATE.settings.palette==='soft') document.body.classList.add('light');
+  if(!STATE.settings.configured){ ensureOnboarding(); } else { renderAll(); }
 });

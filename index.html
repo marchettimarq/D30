@@ -30,7 +30,6 @@
       <button id="btnSettings" class="icon-btn" aria-label="Settings">⚙️</button>
     </div>
 
-    <!-- Tasks Panel -->
     <div id="panelTasks">
       <div class="section-title">
         <h2>Daily Tasks</h2>
@@ -58,7 +57,6 @@
       </div>
     </div>
 
-    <!-- Current Month Calendar Panel -->
     <div id="panelCalendar" class="hidden">
       <div class="calendar-header">
         <div id="calTitle" class="badge">Month YYYY</div>
@@ -70,7 +68,6 @@
 
   <footer><div class="tiny">Offline-capable. No accounts.</div></footer>
 
-  <!-- Confirm / Locking -->
   <div id="confirmModal" class="dialog-backdrop" role="dialog" aria-modal="true">
     <div class="dialog">
       <h3>Did you complete all tasks?</h3>
@@ -82,7 +79,6 @@
     </div>
   </div>
 
-  <!-- Daily recap modal -->
   <div id="recapModal" class="dialog-backdrop" role="dialog" aria-modal="true">
     <div class="dialog">
       <h3>Daily Recap</h3>
@@ -96,7 +92,6 @@
     </div>
   </div>
 
-  <!-- Settings modal -->
   <div id="settingsModal" class="dialog-backdrop" role="dialog" aria-modal="true">
     <div class="dialog">
       <h3>Settings</h3>
@@ -118,58 +113,6 @@
       <div class="actions">
         <button id="btnSettingsCancel">Cancel</button>
         <button class="primary" id="btnSettingsSave">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Onboarding -->
-  <div id="onboard" class="onboard">
-    <div class="onwrap">
-      <div class="oncard">
-        <h2>Welcome to Discipline 30</h2>
-        <p>Build momentum in 30‑day phases. Each day, complete key tasks (workouts, 10K steps, 3L hydration, log food, read), add a note, and finish honestly.</p>
-      </div>
-
-      <div class="oncard">
-        <h2>Choose start date</h2>
-        <input id="startDateInput" class="select" type="date">
-      </div>
-
-      <div class="oncard">
-        <h2>How many phases?</h2>
-        <div class="inline" id="phaseChoices"></div>
-      </div>
-
-      <div class="oncard">
-        <h2>Tasks</h2>
-        <p>Use the template or compose your own. You can also add from the template list while customizing.</p>
-        <div class="inline">
-          <button class="icon-btn selected" id="useTemplate">Use template</button>
-          <button class="icon-btn" id="createOwn">Create my own</button>
-        </div>
-
-        <div id="templatePicker" style="margin-top:8px">
-          <div id="templateChips" class="inline"></div>
-        </div>
-
-        <div id="customWrap" class="hidden" style="margin-top:8px">
-          <div class="inline">
-            <input id="customName" type="text" placeholder="New task name…"/>
-            <button class="icon-btn" id="customReq">Required</button>
-            <button class="icon-btn" id="customAdd">+ Add</button>
-          </div>
-          <div id="customList" style="margin-top:6px"></div>
-        </div>
-
-        <div class="preview">
-          <div id="templatePreview" class="list"></div>
-        </div>
-      </div>
-
-      <div class="oncard">
-        <h2>Ready?</h2>
-        <p id="summaryTxt" class="small">You’ll complete 6 phase(s) using the template tasks.</p>
-        <div class="actions"><button class="primary" id="startProgram">Start Phase 1</button></div>
       </div>
     </div>
   </div>
